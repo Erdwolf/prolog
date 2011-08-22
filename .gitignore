@@ -1,0 +1,7 @@
+pl
+dist
+bench/runbench
+*.hi
+*.o
+*~
+*.swp
