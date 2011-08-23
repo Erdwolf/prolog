@@ -24,7 +24,7 @@ import Control.Monad.Error
 import Control.Monad
 import Control.Arrow (first, second, (***))
 import Data.Generics (Data(..), Typeable(..), everywhere, mkT, everything, mkQ)
-import Data.List (intercalate)
+import Data.List (intercalate, sort, nub)
 import Data.Char (isLetter)
 import Data.Maybe (isJust)
 import Data.Set (Set)
@@ -56,13 +56,37 @@ rhs (Clause   _ rhs) = const rhs
 rhs (ClauseFn _ fn ) = fn
 
 data VariableName = VariableName Int String
-      deriving (Eq, Data, Typeable)
+      deriving (Eq, Data, Typeable, Ord)
 
 type Atom         = String
 type Unifier      = [Substitution]
 type Substitution = (VariableName, Term)
 type Program      = [Clause]
 type Goal         = Term
+
+instance Ord Term where
+   (<=) = wildcards <=! variables <=! atoms <=! compound_terms <=! error "incomparable"
+
+infixr 4 <=!
+(q <=! _) (q->Just l) (q->Just r) = l <= r
+(q <=! _) (q->Just _) _ = True
+(q <=! _) _ (q->Just _) = False
+(_ <=! c) x y = c x y
+
+wildcards Wildcard = Just ()
+wildcards _        = Nothing
+
+variables (Var v) = Just v
+variables _       = Nothing
+
+numbers (Struct (reads->[(n :: Integer,"")]) []) = Just n
+numbers _                                        = Nothing
+
+atoms (Struct a []) = Just [a]
+atoms _             = Nothing
+
+compound_terms (Struct a ts) = Just (length ts, a, ts)
+compound_terms _             = Nothing
 
 
 instance Show Term where
@@ -186,6 +210,12 @@ builtins =
    , ClauseFn (Struct "=<"  [var "N", var "M"]) (binaryIntegerPredicate (<=))
    , ClauseFn (Struct ">="  [var "N", var "M"]) (binaryIntegerPredicate (>=))
    , ClauseFn (Struct "=:=" [var "N", var "M"]) (binaryIntegerPredicate (==))
+   , ClauseFn (Struct "@<" [var "T1", var "T2"]) (binaryPredicate (<))
+   , ClauseFn (Struct "@>" [var "T1", var "T2"]) (binaryPredicate (>))
+   , ClauseFn (Struct "@=<"[var "T1", var "T2"]) (binaryPredicate (<=))
+   , ClauseFn (Struct "@>="[var "T1", var "T2"]) (binaryPredicate (>=))
+   , ClauseFn (Struct "==" [var "T1", var "T2"]) (binaryPredicate (==))
+   , ClauseFn (Struct "sort" [var "Input", var "Output"]) (function sort_pl)
    , Clause (Struct "member" [var "X", Struct "." [var "X", Wildcard]]) []
    , Clause (Struct "member" [var "X", Struct "." [Wildcard, var "Xs"]])
                 [Struct "member" [var "X", var "Xs"]]
@@ -207,6 +237,10 @@ builtins =
    binaryIntegerPredicate :: (Integer -> Integer -> Bool) -> ([Term] -> [Goal])
    binaryIntegerPredicate p [eval->Just n, eval->Just m] | n `p` m = []
    binaryIntegerPredicate p _ = [Struct "false" []]
+
+   binaryPredicate :: (Term -> Term -> Bool) -> ([Term] -> [Goal])
+   binaryPredicate p [t1, t2] | t1 `p` t2 = []
+   binaryPredicate p _ = [Struct "false" []]
 
    is [t, eval->Just n] = [Struct "=" [t, Struct (show n) []]]
    is _                 = [Struct "false" []]
@@ -230,6 +264,10 @@ builtins =
    char_code [t, Struct (reads->[(n,"")]) []] = [Struct "=" [t, Struct [toEnum n] []]]
    char_code _                                = [Struct "false" []]
 
+   function :: (Term -> Term) -> ([Term] -> [Goal])
+   function f [input, output] = [Struct "=" [output, f input]]
+
+   sort_pl = foldr cons nil . nub . sort . foldr_pl (:) []
 
 class Monad m => MonadTrace m where
    trace :: String -> m ()
