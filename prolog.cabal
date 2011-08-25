@@ -11,7 +11,15 @@ Cabal-version:       >=1.2
 
 Library
   Exposed-modules: Language.Prolog
+                   Language.Prolog.IsString
+                   Language.Prolog.Quote
   Other-modules:   Prolog
+                   Interpreter
+                   Unifier
+                   Parser
+                   Syntax
+                   IsString
+                   Quote
   Hs-Source-Dirs:  src
 
   Build-depends:
@@ -19,6 +27,8 @@ Library
     parsec >= 3.1.1,
     syb >= 0.3,
     mtl >= 2.0.1.0,
-    readline,
-    containers >=0.4 && <0.5
+    containers >=0.4 && <0.5,
 
+    template-haskell,
+    th-lift >=0.5.3,
+    transformers >=0.2.2.0

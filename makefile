@@ -4,7 +4,7 @@ tests:
 	(cd specs; runghc -i../src Specs)
 
 shell:
-	ghci -isrc -outputdir dist/build Prolog GraphViz Quote -XOverloadedStrings -XQuasiQuotes
+	ghci -isrc -outputdir dist/build Prolog GraphViz Quote IsString -XOverloadedStrings -XQuasiQuotes
 
 bench:
 	( cd bench; \
@@ -13,7 +13,7 @@ bench:
 	)
 
 pl:
-	ghc -isrc -outputdir dist/build -O --make Prolog -main-is Prolog -o $@
+	ghc -isrc -outputdir dist/build -O --make Console -main-is Console -o $@
 
 docs:
 	cabal configure && cabal haddock --hyperlink-source

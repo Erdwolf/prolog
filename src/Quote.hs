@@ -1,15 +1,19 @@
 {-# LANGUAGE TemplateHaskell, FlexibleInstances #-}
 module Quote (t,ts,c,pl) where
 
+import Control.Applicative ((<*))
+import Data.Functor.Identity (Identity)
+
+import Language.Haskell.TH (listE, varE, viewP, mkName, Q, Exp, Pat)
 import Language.Haskell.TH.Syntax (Lift(lift))
-import Language.Haskell.TH.Lift
-import Language.Haskell.TH hiding (Clause, clause)
-import Language.Haskell.TH.Quote
-import Prolog
-import Text.Parsec
-import Control.Applicative
-import Data.Functor.Identity
-import Data.Generics
+import Language.Haskell.TH.Lift (deriveLiftMany)
+import Language.Haskell.TH.Quote (QuasiQuoter(..))
+import Text.Parsec (parse, eof, ParsecT)
+import Data.Generics (extQ, typeOf, Data)
+
+import Prolog ( Term(..), VariableName, Clause(..), Goal
+              , term, terms, clause, program, whitespace
+              )
 
 $(deriveLiftMany [''Term, ''VariableName, ''Clause])
 
@@ -32,12 +36,24 @@ prologQuasiQuoter parser name =
 parsePrologExp :: (Data a, Lift a) => ParsecT [Char] () Identity a -> String -> String -> Q Exp
 parsePrologExp parser name str = do
    case parse (whitespace >> parser <* eof) ("(Prolog " ++ name ++ " expression)") str of
-      Right x -> ((const $ fail "fsdsfsd") `extQ` (listE . map foo) `extQ` foo) x --dataToExpQ (const Nothing `extQ` (Just . foo)) x
+      Right x -> const (fail $ "Quasi-quoted expressions of type " ++ show (typeOf x) ++ " are not implemented.")
+          `extQ` unquote                     -- Term
+          `extQ` (listE . map unquote)       -- [Term]
+          `extQ` unquoteClause               -- Clause
+          `extQ` (listE . map unquoteClause) -- [Clause]
+           $ x
+      Left e -> fail (show e)
   where
-   foo (Struct "$" [Struct var []]) = [e| Struct (show $(varE (mkName var))) [] |]
-   foo (Struct "$" _)  = fail "Found '$' with non-unquotable arguments"
-   foo (Struct a   ts) = [e| Struct a $(listE $ map foo ts) |]
-   foo t               = lift t
+   unquote (Struct "$" [Struct var []]) =
+                             [e| Struct (show $(varE (mkName var))) [] |]
+   unquote (Struct "$" _)  = fail "Found '$' with non-unquotable arguments"
+   unquote (Struct a   ts) = [e| Struct a $(listE $ map unquote ts) |]
+   unquote t               = lift t
+
+   unquoteClause (Clause lhs rhs) =
+      [e| Clause $(unquote lhs) $(listE $ map unquote rhs) |]
+   unquoteClause (ClauseFn _ _) =
+      fail "Clauses using Haskell functions are not quasi-quotable."
 
 
 parsePrologPat :: (Data a, Lift a) => ParsecT [Char] () Identity a -> String -> String -> Q Pat
