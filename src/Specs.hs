@@ -1,19 +1,22 @@
 module Specs (main) where
 
-import Test.HUnit
-import Text.Parsec
-
 import Control.Applicative ((<*),(<*>),(<$>))
-import Control.Monad
+import Control.Monad (forM)
 import System.Directory
 import System.FilePath
 import System.Console.ANSI
+import System (getArgs)
+
+import Test.HUnit
+import Text.Parsec
 
 import Prolog (vname, term, bottom, resolve, consult)
 
 
 main = do
-  files <- filter ((".spec"==) . takeExtension) <$> getDirectoryContents "."
+  args <- getArgs
+  let specRoot = case args of [] -> "."; [path] -> path
+  files <- filter ((".spec"==) . takeExtension) <$> map (specRoot </>) <$> getDirectoryContents specRoot
   tests <- forM files $ \fname -> do
     let fixture = replaceExtension fname ".pl"
     hasFixture <- doesFileExist fixture

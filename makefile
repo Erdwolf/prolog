@@ -1,4 +1,4 @@
-.PHONY: tests shell bench pl docs
+.PHONY: tests shell bench pl docs coverage
 
 tests:
 	(cd specs; runghc -i../src Specs)
@@ -17,3 +17,10 @@ pl:
 
 docs:
 	cabal configure && cabal haddock --hyperlink-source
+
+coverage:
+	ghc -fhpc -isrc -outputdir dist/build Specs -main-is Specs -o coverage/runspecs
+	cd coverage; ./runspecs ../specs 2>/dev/null >/dev/null
+	hpc report coverage/runspecs
+	hpc markup coverage/runspecs --destdir=coverage --exclude=Prolog --exclude=Specs
+	rm coverage/runspecs*
