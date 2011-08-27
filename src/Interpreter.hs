@@ -11,13 +11,12 @@ import Control.Monad.State
 import Control.Monad.Error
 import Data.Maybe (isJust)
 import Data.Generics (everywhere, mkT)
-import Data.Set (Set)
-import qualified Data.Set as Set
 import Control.Applicative ((<$>),(<*>),(<$),(<*), Applicative(..))
 import Data.List (sort, nub)
 
 import Syntax
 import Unifier
+import Database
 
 
 builtins :: [Clause]
@@ -148,7 +147,7 @@ resolve_ program goals = map cleanup <$> runReaderT (resolve' 1 [] goals []) (cr
   where
       cleanup = filter ((\(VariableName i _) -> i == 0) . fst)
 
-      whenPredicateIsUnknown sig action = asks (`hasPredicate` sig) >>= flip unless action
+      whenPredicateIsUnknown sig action = asks (hasPredicate sig) >>= flip unless action
 
       --resolve' :: Int -> Unifier -> [Goal] -> Stack -> m [Unifier]
       resolve' depth usf [] stack = do
@@ -200,7 +199,7 @@ resolve_ program goals = map cleanup <$> runReaderT (resolve' 1 [] goals []) (cr
 
          createConnections usf goals [(usf, gs)]
 
-         clauses <- asks getClauses
+         clauses <- asks (getClauses t)
          case [ t' | Clause t' [] <- clauses, isJust (unify t t') ] of
             []       -> return (fail "retract/1")
             (fact:_) -> local (abolish fact) $ resolve' depth usf gs stack
@@ -220,7 +219,7 @@ resolve_ program goals = map cleanup <$> runReaderT (resolve' 1 [] goals []) (cr
          choose depth usf gs branches stack
        where
          getBranches = do
-            clauses <- asks getClauses
+            clauses <- asks (getClauses nextGoal)
             return $ do
                clause <- renameVars clauses
                u <- unify (apply usf nextGoal) (lhs clause)
@@ -253,25 +252,3 @@ resolve_ program goals = map cleanup <$> runReaderT (resolve' 1 [] goals []) (cr
          choose (pred depth) u gs alts stack
 
 
-newtype Signature = Signature (Atom, Int) deriving (Ord, Eq)
-instance Show Signature where
-   show (Signature (name, arity)) = name ++ "/" ++ show arity
-
-signature :: Term -> Signature
-signature (Struct name ts) = Signature (name, length ts)
-
-
-data Database = DB [Clause] (Set Signature)
-
-hasPredicate (DB _ signatures) sig = sig `Set.member` signatures
-
-createDB clauses emptyPredicates = DB clauses (Set.fromList $ map (signature . lhs) clauses ++ [ Signature (name,0) | name <- emptyPredicates ])
-
-getClauses (DB clauses _) = clauses
-
-asserta fact (DB clauses signatures) = DB ([Clause fact []] ++ clauses) (Set.insert (signature fact) signatures)
-assertz fact (DB clauses signatures) = DB (clauses ++ [Clause fact []]) (Set.insert (signature fact) signatures)
-abolish fact (DB clauses signatures) = DB (deleteFact clauses) (signatures {- Once known, the signature is never removed. -} )
-   where deleteFact (Clause t []:cs) | t == fact = cs
-         deleteFact (_          :cs)             = cs
-         deleteFact []                           = []
