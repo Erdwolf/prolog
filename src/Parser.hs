@@ -1,5 +1,5 @@
 module Parser
-   ( consult
+   ( consult, parseQuery
    , program, whitespace, comment, clause, terms, term, bottom, vname
    ) where
 
@@ -16,6 +16,8 @@ consult = fmap consultString . readFile
 
 consultString :: String -> Either ParseError Program
 consultString = parse (whitespace >> program <* eof) "(input)"
+
+parseQuery = parse (whitespace >> terms <* eof) "(query)"
 
 program = many (clause <* char '.' <* whitespace)
 

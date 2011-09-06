@@ -1,0 +1,22 @@
+Name:                prolog-graph
+Version:             0.1
+Synopsis:            A Prolog interpreter written in Haskell.
+License:             PublicDomain
+Author:              Matthias Bartsch
+Maintainer:          bartsch@cs.uni-bonn.de
+Category:            Language
+Build-type:          Simple
+
+Cabal-version:       >=1.2
+
+Executable hsprolog-graph
+  Main-is: Main.hs
+
+  Build-depends:
+    base >=4 && <5,
+    prolog == 0.1.*,
+    fgl >= 5.4.2.4,
+    mtl >= 2.0.1.0,
+    cmdargs >= 0.8,
+    text >= 0.11.1.5,
+    graphviz

@@ -4,7 +4,7 @@ tests:
 	(cd specs; runghc -i../src Specs)
 
 shell:
-	ghci -isrc -outputdir dist/build Prolog GraphViz Quote IsString -XOverloadedStrings -XQuasiQuotes
+	ghci -isrc -iprolog-graph -outputdir dist/build Prolog GraphViz Quote IsString -XOverloadedStrings -XQuasiQuotes
 
 bench:
 	( cd bench; \

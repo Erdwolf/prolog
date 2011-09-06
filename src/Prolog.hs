@@ -10,7 +10,7 @@ module Prolog
    , runNoGraphT
    , resolve, resolve_
    , (+++)
-   , consult
+   , consult, parseQuery
    , program, whitespace, comment, clause, terms, term, bottom, vname
    )
 where

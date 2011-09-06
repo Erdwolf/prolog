@@ -15,6 +15,7 @@ Library
                    Language.Prolog.Quote
   Other-modules:   Prolog
                    Interpreter
+                   Database
                    Unifier
                    Parser
                    Syntax

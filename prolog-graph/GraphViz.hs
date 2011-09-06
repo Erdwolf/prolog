@@ -14,7 +14,11 @@ import Data.GraphViz (preview, runGraphviz, setDirectedness, graphToDot, Graphvi
 import Data.GraphViz.Attributes.Colors (Color(X11Color), X11Color(..))
 import Data.GraphViz.Attributes.HTML
 
-import Prolog
+import qualified Data.Text.Lazy
+
+import Language.Prolog
+
+htmlStr = HtmlStr . Data.Text.Lazy.pack
 
 
 -- Graphical output of derivation tree
@@ -64,11 +68,11 @@ ensureNode node label =
          then graph
          else Graph.insNode (node, label) graph
 
-makeNodeLabel _ [] = [HtmlStr "[]"]
-makeNodeLabel _ gs = [HtmlStr $ intercalate "," $ map show gs]
+makeNodeLabel _ [] = [htmlStr "[]"]
+makeNodeLabel _ gs = [htmlStr $ intercalate "," $ map show gs]
 
-makeEdgeLabel [] _ = [HtmlFont [HtmlPointSize 8] [HtmlStr "{}"]]
-makeEdgeLabel u  _ = [HtmlFont [HtmlPointSize 8] $ intersperse (HtmlNewline []) [HtmlStr $ show v ++ " = " ++ show t | (v,t) <- u]]
+makeEdgeLabel [] _ = [HtmlFont [HtmlPointSize 8] [htmlStr "{}"]]
+makeEdgeLabel u  _ = [HtmlFont [HtmlPointSize 8] $ intersperse (HtmlNewline []) [htmlStr $ show v ++ " = " ++ show t | (v,t) <- u]]
 
 modifyLabel node f = do
    modify $ Graph.gmap $ \cxt@(in_,node',label,out) ->

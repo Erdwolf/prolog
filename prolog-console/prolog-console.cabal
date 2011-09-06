@@ -1,0 +1,19 @@
+Name:                prolog-console
+Version:             0.1
+Synopsis:            A Prolog interpreter written in Haskell.
+License:             PublicDomain
+Author:              Matthias Bartsch
+Maintainer:          bartsch@cs.uni-bonn.de
+Category:            Language
+Build-type:          Simple
+
+Cabal-version:       >=1.2
+
+Executable hsprolog
+  Main-is: Main.hs
+
+  Build-depends:
+    base >=4 && <5,
+    parsec >= 3.1.1,
+    readline >= 1.0.1.0,
+    prolog == 0.1.*
