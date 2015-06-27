@@ -11,7 +11,7 @@ import Control.Monad.State
 import Control.Monad.Error
 import Data.Maybe (isJust)
 import Data.Generics (everywhere, mkT)
-import Control.Applicative ((<$>),(<*>),(<$),(<*), Applicative(..))
+import Control.Applicative ((<$>),(<*>),(<$),(<*), Applicative(..), Alternative(..))
 import Data.List (sort, nub)
 
 import Syntax
@@ -109,7 +109,7 @@ instance (MonadTrace m, MonadTrans t, Monad (t m)) => MonadTrace (t m) where
    trace x = lift (trace x)
 
 
-newtype Trace m a = Trace { withTrace :: m a }  deriving (Functor, Monad, MonadError e)
+newtype Trace m a = Trace { withTrace :: m a }  deriving (Functor, Applicative, Monad, MonadError e)
 
 trace_ label x = trace (label++":\t"++show x)
 
@@ -125,7 +125,7 @@ instance MonadGraphGen m => MonadGraphGen (ReaderT r m) where
    markCutBranches = lift . markCutBranches
 
 
-newtype NoGraphT m a = NoGraphT {runNoGraphT :: m a} deriving (Monad, Functor, MonadFix, MonadPlus, Applicative, MonadError e)
+newtype NoGraphT m a = NoGraphT {runNoGraphT :: m a} deriving (Monad, Functor, MonadFix, MonadPlus, Applicative, Alternative, MonadError e)
 instance MonadTrans NoGraphT where
    lift = NoGraphT
 
